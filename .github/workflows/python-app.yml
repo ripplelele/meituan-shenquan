@@ -21,11 +21,7 @@ jobs:
       with:
         python-version: 3.9
     - name: Install dependencies
-    - name: My first action
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        FIRST_NAME: token
-        LAST_NAME: token 
+    
     
     
       run: |
