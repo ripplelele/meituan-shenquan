@@ -34,7 +34,7 @@ head={"Host": "i.waimai.meituan.com","User-Agent":"MeituanGroup/11.9.208","x-req
 baseurl=r"https://i.waimai.meituan.com"
 
 #定义全局变量并初始化 以下初始化赋值的变量不要改！！！！
-global  wm_latitude,wm_longitude,token,showPriceNumber
+global  wm_latitude,wm_longitude,token,showPriceNumber,propIdforuse,eight,ten,fifteen,thirty
 showPriceNumber = "1"
 wm_latitude =1.0
 wm_longitude=1.0
@@ -43,13 +43,17 @@ propId=1.0
 exchangeCoinNumber=1.0
 serverkey=""
 yesornot = ""
+propIdforuse =2
+##标记这四类红包数量不为空，用来放弃15元抢购30元红包，若您不需该功能，请自行将下一行的1改为0
+eight = ten = fifteen = thirty =1
+
 
 
 #将print内容同步写到output.txt文件
 class Logger(object):
     def __init__(self, fileN='Default.log'):
         self.terminal = sys.stdout
-        self.log = open(fileN, 'w+')
+        self.log = open(fileN, 'w+',encoding='utf-8')
 
     def write(self, message):
         '''print实际相当于sys.stdout.write'''
@@ -151,7 +155,7 @@ def myredbean(token):
             for k in result2["data"]["propExchangeRuleInfos"]:
                 print("第%d类必中符 所需设置propId参数为%d\t所需红包豆数量为:%d\t总量为%d\n"%(cent,k["propId"],k["needNumber"],k["amount"]))
                 cent=cent+1
-            print("一般这几类必中符金额依次为5元 8元 10元,大概率使用后兑换到20-5，25-8,30-10的红包，建议选择第二类即可\n")
+            print("一般这几类必中符金额依次为5元 8元 15元,大概率使用后兑换到20-5，25-8,40-15的红包，建议选择第二类,即propId填4,所需豆子数量填1000即可\n若需开启新功能自动尝试放弃15元红包抢30元红包,则需选择第三类，即propID为5，所需豆子为1800\n注意填写的propId和所需豆子数之间是上方的一一对应关系，错误对应将导致兑换失败!\n")
         elif (result2["code"]==1 and result2["subcode"]==-1):
             print("%s,原因:输入token失效或错误 请继续运行程序并输入，脚本将在运行一遍后自动删除异常配置文件!!\n"%(result2["msg"]))
         else:
@@ -172,12 +176,14 @@ def getpropId_Coinnumber(token):
         while True:
             myredbean(token)
             try:
-                propId=eval(input("请输入所需要兑换道具的porpId(如2):\n"))
-                exchangeCoinNumber=eval(input("请输入propId对应某类必中符所需的豆子数量(如500):\n"))
+                propId=eval(input("请输入所需要兑换道具的porpId(如4):\n"))
+                exchangeCoinNumber=eval(input("请输入propId对应某类必中符所需的豆子数量(如1000):\n"))
             except:
                 pass
-            if type(propId)==int and type(exchangeCoinNumber)==int :
-                break
+            if type(propId)==int and type(exchangeCoinNumber)==int  :
+                if propId == 2 or propId == 4 or propId == 5:
+                    if exchangeCoinNumber ==500 or exchangeCoinNumber ==1000 or exchangeCoinNumber ==1800 :
+                        break
         file =open(r"./propId_Coinnumbe.txt", mode='w+',encoding="UTF-8")
         file.write(str(propId)+"\n"+str(exchangeCoinNumber))
         file.close
@@ -310,11 +316,11 @@ def signForBeans(token):
 
 
 #def 限时抢红包函数
-def drawlottery(batchId,token):
+def drawlottery(batchId,token,propIdforuse):
     wm_latitude = getVar()[0]
     wm_longitude = getVar()[1]
     print("### *开始执行限时抢天天神券脚本🧧:* ###\n")
-    datas = "parActivityId="+parActivityId+"&wm_latitude="+str(wm_latitude)+"&wm_longitude="+str(wm_longitude)+"&token="+token+"&batchId="+batchId+"&isShareLink=true"+"&propType=1"+"&propid=4"
+    datas = "parActivityId="+parActivityId+"&wm_latitude="+str(wm_latitude)+"&wm_longitude="+str(wm_longitude)+"&token="+token+"&batchId="+batchId+"&isShareLink=true"+"&propType=1"+"&propid="+str(propIdforuse)
     url_drawlottery = baseurl+r"/cfeplay/playcenter/batchgrabred/drawlottery"
     request =urllib.request.Request(url_drawlottery,headers=head,data=datas.encode("utf-8"),method="POST")
     try:
@@ -344,7 +350,6 @@ def drawlottery(batchId,token):
             print("脚本执行失败，错误代码如下:\n")
             print(e.code)
         if hasattr(e,"reason"):
-            
             print(e,"reason")
 
 
@@ -432,9 +437,12 @@ def querymyreward(token):
             print("红包库中共有%d个红包\n"%(len(result2["data"]["myawardInfos"])))
             cent=0
             count = 0
+            isover15=0
             for k in result2["data"]["myawardInfos"]:
                 if not k["status"]:
                     print("### *第%d个红包有效!!!!* ###\n红包属性:%s\n使用限制:%s\n红包价值:%s元\n红包剩余有效期%s分钟\n"%(cent+1,k["name"],k["priceLimitdesc"],k["showPriceNumberYuan"],str(float(k["leftTime"])/60000)))
+                    if(int(k["showPriceNumberYuan"])>15):
+                        isover15 =1
                     print("\n")
                 else:
                     count=count+1
@@ -442,8 +450,11 @@ def querymyreward(token):
                         print("### *过期红包详情:* ###\n")
                     
                 cent=cent+1
-            print("总计已领取%d个红包,已过期%d个😅,有效%d个\n"%(cent,count,cent-count))
-                
+            if(propIdforuse!=5):
+                print("总计已领取%d个红包,其中已过期%d个😅,有效%d个\n"%(cent,count,cent-count))
+            else:
+                if isover15==1:
+                    print("恭喜你领取到价值30元以上的限时红包,具体价值如上所示!!总计已领取%d个红包,其中已过期%d个😅,有效%d个\n"%(cent,count,cent-count))
             print("\n")
         elif (result2["code"]==1):
             print("%s\n"%(result2["msg"]))
@@ -537,12 +548,18 @@ def querymyProps(token):
             for k in result2["data"]:
                 if k["status"]==1:
                     print("第%d个必中符道具有效!!!!\n必中符道具id号:%s\n必中符道具属性:%s\n过期时间:%s\n"%(cent+1,k["recordNo"],k["propName"],k["expireTime"]))
+                    if cent==0:
+                        propIdforuse = k["propId"] 
                     print("\n")
                 else:
                     count=count+1   
                 cent=cent+1
             if (count!=0):
                  print("总计%d个必中符道具,已过期%d个😅,有效%d个\n"%(cent,count,cent-count))
+            if ((cent-count)!=0):
+                print("### **注意:接下来抢红包🧧时将自动为您使用道具库中第一个道具!!** ###")
+            else:
+                print("### **注意:道具库无有效道具，无法使用必中符,接下来使用默认参数抢红包(拼手气😅)!!** ###")
 
             print("\n")
         elif (result2["code"]==7):
@@ -594,7 +611,7 @@ def exchange(token):
         if(result2["code"]==0 and result2["subcode"]==0):
             print("%s,您设置的兑换成功!😄\n"%(result2["msg"]))
         elif (result2["code"]==1 and result2["subcode"]==13):
-            print("%s\n"%(result2["msg"]))
+            print("%s,您现在的红包豆不足以兑换此类红包!\n"%(result2["msg"]))
         elif (result2["code"]==1 and result2["subcode"]==-1):
             print("%s\n"%(result2["msg"]))
         elif (result2["code"]==7):
@@ -656,7 +673,16 @@ def queryredpool(token):
 
         if(result2["code"]==0 and result2["subcode"]==0 and len(result2["data"]["awardInfos"])):
             for k in result2["data"]["awardInfos"]:
-                print("**%s元红包池总量:%d,剩余%s张**\n"%(k["showPriceNumberYuan"],k["sendStock"],k["leftStock"]))
+                if (round(float(k["showPriceNumberYuan"]))==8 and k["leftStock"]==0):
+                    eight = 0
+                if (round(float(k["showPriceNumberYuan"]))==10 and k["leftStock"]==0):
+                    ten = 0
+                if (round(float(k["showPriceNumberYuan"]))==15 and k["leftStock"]==0):
+                    fifteen = 0
+                if (round(float(k["showPriceNumberYuan"]))==30 and k["leftStock"]==0):
+                    thirty = 0
+                print("**%s元红包池总量:%d张,剩余%s张**\n"%(k["showPriceNumberYuan"],k["sendStock"],k["leftStock"]))
+                
         elif (result2["code"]==1 and result2["subcode"]==-1):
             print("token失效,导致获取活动信息失败！%s\n"%(result2["msg"]))
         else:
@@ -734,7 +760,15 @@ def main():
     signForBeans(token)
     queryredpool(token)
     batchId = getbatchId(token)
-    drawlottery(batchId,token)
+    querymyProps(token)
+    if(propIdforuse ==5 ):
+        ##跳出循环的条件是15没了或者30没了或者15 30都没了
+        while fifteen ==1 and thirty==1 :
+            queryredpool(token)
+    drawlottery(batchId,token,propIdforuse)
+    if(propIdforuse ==5 ):
+        if(fifteen == 0 and thirty ==1):
+            print("### **已等到红包池中15元红包被清空,30元红包还有剩余😄，开始利用超大额必中符(此类必中符面值一般为15元)执行抢红包脚本！** ###")  
     if(int(showPriceNumber)<500):
         redtobean(batchId,token)
     else:
