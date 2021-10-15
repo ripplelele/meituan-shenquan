@@ -80,9 +80,9 @@ def getserverkey():
             try:
                 
                 print("若您想🙏每天被移动端(如微信)通知，则建议开启通知\n")
-                yesornot=input("是否开启移动端推送(y/n),输入其他字符均为默认关闭推送:\n")
+                yesornot=input("y")
                 print("获取serverkey请访问:https://sct.ftqq.com/\n")
-                serverkey=input("请输入serverkey(若上一步选择为n,此处可乱写):\n")
+                serverkey=input("SCT55691TNbrxjtkL5YfCegCc2aZNhpDc")
             except:
                 pass
             if type(yesornot)==str and (yesornot =="n" or yesornot=='y') and type(serverkey)==str  and serverkey !="":
