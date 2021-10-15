@@ -124,8 +124,8 @@ def getlatlongitude():
             
             try:
                 print("若您不知道🙏限时抢红包开放城市，可试各地省会,如成都(30657401,104065827)\n")
-                wm_latitude=eval(input("请输入去除小数点的纬度(如30657401):\n"))
-                wm_longitude=eval(input("请输入去除小数点的经度(如104065827):\n"))
+                wm_latitude=eval(input("30657401"))
+                wm_longitude=eval(input("104065827"))
             except:
                 pass
             if type(wm_latitude)==int and type(wm_longitude)==int :
